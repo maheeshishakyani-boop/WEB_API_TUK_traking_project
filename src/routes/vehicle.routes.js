@@ -1,5 +1,193 @@
+// // ================================================
+// // VEHICLE ROUTES
+// // ================================================
+// const express = require('express');
+// const router  = express.Router();
+// const ctrl    = require('../controllers/vehicle.controller');
+// const { protect, authorize } = require('../middleware/auth');
+
+// /**
+//  * @swagger
+//  * tags:
+//  *   name: Vehicles
+//  *   description: Tuk-tuk vehicle registration and management
+//  */
+
+// /**
+//  * @swagger
+//  * /api/vehicles:
+//  *   get:
+//  *     summary: Get all vehicles with filtering, search and pagination
+//  *     tags: [Vehicles]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: query
+//  *         name: district_id
+//  *         schema:
+//  *           type: integer
+//  *         description: Filter by district ID
+//  *       - in: query
+//  *         name: province_id
+//  *         schema:
+//  *           type: integer
+//  *         description: Filter by province ID
+//  *       - in: query
+//  *         name: status
+//  *         schema:
+//  *           type: string
+//  *           enum: [active, inactive, suspended]
+//  *         description: Filter by vehicle status
+//  *       - in: query
+//  *         name: search
+//  *         schema:
+//  *           type: string
+//  *         description: Search by registration number or driver name
+//  *         example: "ABC"
+//  *       - in: query
+//  *         name: page
+//  *         schema:
+//  *           type: integer
+//  *           default: 1
+//  *       - in: query
+//  *         name: limit
+//  *         schema:
+//  *           type: integer
+//  *           default: 20
+//  *     responses:
+//  *       200:
+//  *         description: Paginated list of vehicles
+//  */
+// router.get('/', protect, ctrl.getAll);
+
+// /**
+//  * @swagger
+//  * /api/vehicles/{id}:
+//  *   get:
+//  *     summary: Get a single vehicle by ID
+//  *     tags: [Vehicles]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         schema:
+//  *           type: integer
+//  *     responses:
+//  *       200:
+//  *         description: Vehicle data
+//  *       404:
+//  *         description: Vehicle not found
+//  */
+// router.get('/:id', protect, ctrl.getOne);
+
+// /**
+//  * @swagger
+//  * /api/vehicles:
+//  *   post:
+//  *     summary: Register a new tuk-tuk vehicle (admin only)
+//  *     tags: [Vehicles]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required: [registration_number, driver_name, district_id]
+//  *             properties:
+//  *               registration_number:
+//  *                 type: string
+//  *                 example: "WP CAB-1234"
+//  *               driver_name:
+//  *                 type: string
+//  *                 example: "Kamal Perera"
+//  *               driver_phone:
+//  *                 type: string
+//  *                 example: "0771234567"
+//  *               driver_nic:
+//  *                 type: string
+//  *                 example: "199012345678"
+//  *               district_id:
+//  *                 type: integer
+//  *                 example: 1
+//  *               device_id:
+//  *                 type: string
+//  *                 example: "DEV-001"
+//  *     responses:
+//  *       201:
+//  *         description: Vehicle registered successfully
+//  *       400:
+//  *         description: Missing required fields
+//  */
+// router.post('/', protect, authorize('admin'), ctrl.create);
+
+// /**
+//  * @swagger
+//  * /api/vehicles/{id}:
+//  *   put:
+//  *     summary: Update vehicle details (admin only)
+//  *     tags: [Vehicles]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         schema:
+//  *           type: integer
+//  *     requestBody:
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             properties:
+//  *               driver_name:
+//  *                 type: string
+//  *               driver_phone:
+//  *                 type: string
+//  *               status:
+//  *                 type: string
+//  *                 enum: [active, inactive, suspended]
+//  *     responses:
+//  *       200:
+//  *         description: Vehicle updated
+//  *       404:
+//  *         description: Vehicle not found
+//  */
+// router.put('/:id', protect, authorize('admin'), ctrl.update);
+
+// /**
+//  * @swagger
+//  * /api/vehicles/{id}:
+//  *   delete:
+//  *     summary: Deactivate a vehicle (admin only) - does not delete, just marks inactive
+//  *     tags: [Vehicles]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: id
+//  *         required: true
+//  *         schema:
+//  *           type: integer
+//  *     responses:
+//  *       200:
+//  *         description: Vehicle deactivated
+//  *       404:
+//  *         description: Vehicle not found
+//  */
+// router.delete('/:id', protect, authorize('admin'), ctrl.remove);
+
+// module.exports = router;
+
+
 // ================================================
 // VEHICLE ROUTES
+// RBAC: admin + officer can VIEW, admin only can WRITE
+// device role has NO access to vehicle data
 // ================================================
 const express = require('express');
 const router  = express.Router();
@@ -10,14 +198,14 @@ const { protect, authorize } = require('../middleware/auth');
  * @swagger
  * tags:
  *   name: Vehicles
- *   description: Tuk-tuk vehicle registration and management
+ *   description: Tuk-tuk vehicle management
  */
 
 /**
  * @swagger
  * /api/vehicles:
  *   get:
- *     summary: Get all vehicles with filtering, search and pagination
+ *     summary: Get all vehicles with filtering and pagination — admin and officer only
  *     tags: [Vehicles]
  *     security:
  *       - bearerAuth: []
@@ -26,18 +214,17 @@ const { protect, authorize } = require('../middleware/auth');
  *         name: district_id
  *         schema:
  *           type: integer
- *         description: Filter by district ID
+ *         description: Filter by district
  *       - in: query
  *         name: province_id
  *         schema:
  *           type: integer
- *         description: Filter by province ID
+ *         description: Filter by province
  *       - in: query
  *         name: status
  *         schema:
  *           type: string
  *           enum: [active, inactive, suspended]
- *         description: Filter by vehicle status
  *       - in: query
  *         name: search
  *         schema:
@@ -57,14 +244,16 @@ const { protect, authorize } = require('../middleware/auth');
  *     responses:
  *       200:
  *         description: Paginated list of vehicles
+ *       403:
+ *         description: Device accounts cannot access vehicle data
  */
-router.get('/', protect, ctrl.getAll);
+router.get('/', protect, authorize('admin', 'officer'), ctrl.getAll);
 
 /**
  * @swagger
  * /api/vehicles/{id}:
  *   get:
- *     summary: Get a single vehicle by ID
+ *     summary: Get a single vehicle — admin and officer only
  *     tags: [Vehicles]
  *     security:
  *       - bearerAuth: []
@@ -80,13 +269,13 @@ router.get('/', protect, ctrl.getAll);
  *       404:
  *         description: Vehicle not found
  */
-router.get('/:id', protect, ctrl.getOne);
+router.get('/:id', protect, authorize('admin', 'officer'), ctrl.getOne);
 
 /**
  * @swagger
  * /api/vehicles:
  *   post:
- *     summary: Register a new tuk-tuk vehicle (admin only)
+ *     summary: Register a new tuk-tuk — ADMIN ONLY
  *     tags: [Vehicles]
  *     security:
  *       - bearerAuth: []
@@ -118,17 +307,17 @@ router.get('/:id', protect, ctrl.getOne);
  *                 example: "DEV-001"
  *     responses:
  *       201:
- *         description: Vehicle registered successfully
+ *         description: Vehicle registered
  *       400:
  *         description: Missing required fields
  */
-router.post('/', protect, authorize('admin'), ctrl.create);
+router.post('/',    protect, authorize('admin'), ctrl.create);
 
 /**
  * @swagger
  * /api/vehicles/{id}:
  *   put:
- *     summary: Update vehicle details (admin only)
+ *     summary: Update vehicle details — ADMIN ONLY
  *     tags: [Vehicles]
  *     security:
  *       - bearerAuth: []
@@ -154,16 +343,14 @@ router.post('/', protect, authorize('admin'), ctrl.create);
  *     responses:
  *       200:
  *         description: Vehicle updated
- *       404:
- *         description: Vehicle not found
  */
-router.put('/:id', protect, authorize('admin'), ctrl.update);
+router.put('/:id',    protect, authorize('admin'), ctrl.update);
 
 /**
  * @swagger
  * /api/vehicles/{id}:
  *   delete:
- *     summary: Deactivate a vehicle (admin only) - does not delete, just marks inactive
+ *     summary: Deactivate a vehicle (soft delete) — ADMIN ONLY
  *     tags: [Vehicles]
  *     security:
  *       - bearerAuth: []
@@ -176,8 +363,6 @@ router.put('/:id', protect, authorize('admin'), ctrl.update);
  *     responses:
  *       200:
  *         description: Vehicle deactivated
- *       404:
- *         description: Vehicle not found
  */
 router.delete('/:id', protect, authorize('admin'), ctrl.remove);
 

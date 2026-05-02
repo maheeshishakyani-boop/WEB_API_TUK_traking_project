@@ -1,5 +1,170 @@
+// // ================================================
+// // LOCATION ROUTES
+// // ================================================
+// const express = require('express');
+// const router  = express.Router();
+// const ctrl    = require('../controllers/location.controller');
+// const { protect, authorize } = require('../middleware/auth');
+
+// /**
+//  * @swagger
+//  * tags:
+//  *   name: Locations
+//  *   description: GPS location tracking - send pings and view history
+//  */
+
+// /**
+//  * @swagger
+//  * /api/locations/live:
+//  *   get:
+//  *     summary: Get ALL active vehicles with their latest location (live map view)
+//  *     tags: [Locations]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: query
+//  *         name: district_id
+//  *         schema:
+//  *           type: integer
+//  *         description: Filter by district ID
+//  *       - in: query
+//  *         name: province_id
+//  *         schema:
+//  *           type: integer
+//  *         description: Filter by province ID
+//  *     responses:
+//  *       200:
+//  *         description: All vehicles with latest GPS coordinates
+//  */
+// router.get('/live', protect, ctrl.getLiveAll);
+
+// /**
+//  * @swagger
+//  * /api/locations/ping:
+//  *   post:
+//  *     summary: Send a GPS location ping (tuk-tuk device sends this)
+//  *     tags: [Locations]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     requestBody:
+//  *       required: true
+//  *       content:
+//  *         application/json:
+//  *           schema:
+//  *             type: object
+//  *             required: [vehicle_id, latitude, longitude]
+//  *             properties:
+//  *               vehicle_id:
+//  *                 type: integer
+//  *                 example: 1
+//  *               latitude:
+//  *                 type: number
+//  *                 example: 6.9271
+//  *                 description: "Sri Lanka: 5.9 to 9.9"
+//  *               longitude:
+//  *                 type: number
+//  *                 example: 79.8612
+//  *                 description: "Sri Lanka: 79.5 to 82.0"
+//  *               speed_kmh:
+//  *                 type: number
+//  *                 example: 35.5
+//  *               heading:
+//  *                 type: number
+//  *                 example: 180
+//  *                 description: "Direction in degrees (0=North, 90=East)"
+//  *     responses:
+//  *       201:
+//  *         description: Location recorded successfully
+//  *       404:
+//  *         description: Vehicle not found
+//  *       403:
+//  *         description: Vehicle is not active
+//  */
+// router.post('/ping', protect, ctrl.ping);
+
+// /**
+//  * @swagger
+//  * /api/locations/{vehicle_id}/latest:
+//  *   get:
+//  *     summary: Get latest GPS location for one vehicle
+//  *     tags: [Locations]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: vehicle_id
+//  *         required: true
+//  *         schema:
+//  *           type: integer
+//  *         example: 1
+//  *     responses:
+//  *       200:
+//  *         description: Vehicle with latest GPS coordinates
+//  *       404:
+//  *         description: Vehicle or location not found
+//  */
+// router.get('/:vehicle_id/latest', protect, ctrl.getLatest);
+
+// /**
+//  * @swagger
+//  * /api/locations/{vehicle_id}/history:
+//  *   get:
+//  *     summary: Get movement history for a vehicle within a time range
+//  *     tags: [Locations]
+//  *     security:
+//  *       - bearerAuth: []
+//  *     parameters:
+//  *       - in: path
+//  *         name: vehicle_id
+//  *         required: true
+//  *         schema:
+//  *           type: integer
+//  *         example: 1
+//  *       - in: query
+//  *         name: start_date
+//  *         schema:
+//  *           type: string
+//  *           format: date
+//  *         description: "Start date (e.g. 2025-04-20)"
+//  *         example: "2025-04-20"
+//  *       - in: query
+//  *         name: end_date
+//  *         schema:
+//  *           type: string
+//  *           format: date
+//  *         description: "End date (e.g. 2025-04-27)"
+//  *         example: "2025-04-27"
+//  *       - in: query
+//  *         name: page
+//  *         schema:
+//  *           type: integer
+//  *           default: 1
+//  *       - in: query
+//  *         name: limit
+//  *         schema:
+//  *           type: integer
+//  *           default: 100
+//  *     responses:
+//  *       200:
+//  *         description: Location history with pagination
+//  *       404:
+//  *         description: Vehicle not found
+//  */
+// router.get('/:vehicle_id/history', protect, ctrl.getHistory);
+
+// module.exports = router;
+
+
 // ================================================
 // LOCATION ROUTES
+// RBAC Summary:
+//   POST /ping           → device + admin only (send GPS location)
+//   GET  /live           → admin + officer only (view live map)
+//   GET  /:id/latest     → admin + officer only (view location)
+//   GET  /:id/history    → admin + officer only (view history)
+//
+// device role CANNOT view location data
+// officer role CANNOT send fake pings
 // ================================================
 const express = require('express');
 const router  = express.Router();
@@ -10,39 +175,15 @@ const { protect, authorize } = require('../middleware/auth');
  * @swagger
  * tags:
  *   name: Locations
- *   description: GPS location tracking - send pings and view history
+ *   description: GPS location tracking
  */
-
-/**
- * @swagger
- * /api/locations/live:
- *   get:
- *     summary: Get ALL active vehicles with their latest location (live map view)
- *     tags: [Locations]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: district_id
- *         schema:
- *           type: integer
- *         description: Filter by district ID
- *       - in: query
- *         name: province_id
- *         schema:
- *           type: integer
- *         description: Filter by province ID
- *     responses:
- *       200:
- *         description: All vehicles with latest GPS coordinates
- */
-router.get('/live', protect, ctrl.getLiveAll);
 
 /**
  * @swagger
  * /api/locations/ping:
  *   post:
- *     summary: Send a GPS location ping (tuk-tuk device sends this)
+ *     summary: Send a GPS location ping — DEVICE and ADMIN only
+ *     description: "Only tuk-tuk GPS devices (role: device) and admins can submit location pings. Officers cannot send pings."
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -60,33 +201,59 @@ router.get('/live', protect, ctrl.getLiveAll);
  *               latitude:
  *                 type: number
  *                 example: 6.9271
- *                 description: "Sri Lanka: 5.9 to 9.9"
  *               longitude:
  *                 type: number
  *                 example: 79.8612
- *                 description: "Sri Lanka: 79.5 to 82.0"
  *               speed_kmh:
  *                 type: number
  *                 example: 35.5
  *               heading:
  *                 type: number
- *                 example: 180
- *                 description: "Direction in degrees (0=North, 90=East)"
+ *                 example: 90
  *     responses:
  *       201:
- *         description: Location recorded successfully
+ *         description: Location recorded
+ *       400:
+ *         description: Missing coordinates
+ *       403:
+ *         description: Officers cannot send pings — device role required
  *       404:
  *         description: Vehicle not found
- *       403:
- *         description: Vehicle is not active
  */
-router.post('/ping', protect, ctrl.ping);
+router.post('/ping', protect, authorize('device', 'admin'), ctrl.ping);
+
+/**
+ * @swagger
+ * /api/locations/live:
+ *   get:
+ *     summary: Live view of all active vehicles with latest location — ADMIN and OFFICER only
+ *     tags: [Locations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: district_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by district
+ *       - in: query
+ *         name: province_id
+ *         schema:
+ *           type: integer
+ *         description: Filter by province
+ *     responses:
+ *       200:
+ *         description: All vehicles with latest GPS coordinates
+ *       403:
+ *         description: Device accounts cannot view location data
+ */
+router.get('/live', protect, authorize('admin', 'officer'), ctrl.getLiveAll);
 
 /**
  * @swagger
  * /api/locations/{vehicle_id}/latest:
  *   get:
- *     summary: Get latest GPS location for one vehicle
+ *     summary: Get latest GPS location for one vehicle — ADMIN and OFFICER only
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -103,13 +270,13 @@ router.post('/ping', protect, ctrl.ping);
  *       404:
  *         description: Vehicle or location not found
  */
-router.get('/:vehicle_id/latest', protect, ctrl.getLatest);
+router.get('/:vehicle_id/latest', protect, authorize('admin', 'officer'), ctrl.getLatest);
 
 /**
  * @swagger
  * /api/locations/{vehicle_id}/history:
  *   get:
- *     summary: Get movement history for a vehicle within a time range
+ *     summary: Get movement history for a vehicle — ADMIN and OFFICER only
  *     tags: [Locations]
  *     security:
  *       - bearerAuth: []
@@ -125,14 +292,12 @@ router.get('/:vehicle_id/latest', protect, ctrl.getLatest);
  *         schema:
  *           type: string
  *           format: date
- *         description: "Start date (e.g. 2025-04-20)"
  *         example: "2025-04-20"
  *       - in: query
  *         name: end_date
  *         schema:
  *           type: string
  *           format: date
- *         description: "End date (e.g. 2025-04-27)"
  *         example: "2025-04-27"
  *       - in: query
  *         name: page
@@ -150,6 +315,6 @@ router.get('/:vehicle_id/latest', protect, ctrl.getLatest);
  *       404:
  *         description: Vehicle not found
  */
-router.get('/:vehicle_id/history', protect, ctrl.getHistory);
+router.get('/:vehicle_id/history', protect, authorize('admin', 'officer'), ctrl.getHistory);
 
 module.exports = router;
